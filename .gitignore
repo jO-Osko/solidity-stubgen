@@ -1,0 +1,19 @@
+venv
+env
+.coverage
+.coverage.*
+_build
+.DS_Store
+.vscode
+.tox
+__pycache__
+.mypy_cache
+dist
+
+# Packaging artifacts
+build/
+dist/
+pip-wheel-metadata/
+.eggs
+
+.idea
