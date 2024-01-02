@@ -1,9 +1,9 @@
 # Copyright (C) 2021 Filip Koprivec
-import pkg_resources
-from setuptools import setup, find_packages
-from pathlib import Path
 import sys
+from pathlib import Path
 
+import pkg_resources
+from setuptools import find_packages, setup
 
 assert sys.version_info >= (3, 7, 0), "Solidity typestub requires Python 3.7.0+"
 
@@ -24,7 +24,7 @@ def get_long_description() -> str:
 setup(
     name="solidity_typestub",
     version="0.0.1",  # Increase this on release
-    description="Generate python typestubs for abi of solidity contracts",
+    description="Generate python typestubs from solidity contracts abi",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     keywords="solidity abi workflow mypy typestubs",

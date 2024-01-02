@@ -1,11 +1,10 @@
+import argparse
 import os.path
 
-from .printer import process_folder, PrintConfig, print_file
-import argparse
+from .printer import PrintConfig, print_file, process_folder
 
 
 def main() -> None:
-
     parser = argparse.ArgumentParser(
         description="Generate python stub files from solidity abi"
     )

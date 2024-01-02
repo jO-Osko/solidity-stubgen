@@ -4,7 +4,7 @@ import os
 
 import black
 
-from .solidity_types import Contract, header
+from .solidity_types import Contract, decoder_data_header, header
 
 
 @dataclasses.dataclass
@@ -23,7 +23,7 @@ def print_file(input_file: str, config: PrintConfig) -> None:
     )
 
     contract = Contract.from_json(json_data)
-    contract_stub = contract.stub_source()
+    contract_stub, decoder_stub = contract.stub_source()
 
     if config.include_header:
         contract_stub = header + contract_stub
@@ -32,7 +32,17 @@ def print_file(input_file: str, config: PrintConfig) -> None:
     if config.format:
         full_text = black.format_str(full_text, mode=black.Mode(is_pyi=True))
 
+    if config.include_header:
+        decoder_stub = decoder_data_header + decoder_stub
+
+    full_decoder_text = "\n".join(decoder_stub)
+    if config.format:
+        full_decoder_text = black.format_str(
+            full_decoder_text, mode=black.Mode(is_pyi=False)
+        )
+
     print(full_text, file=open(output_file, "w"), end="")
+    print(full_decoder_text, file=open(output_file.replace(".pyi", ".py"), "w"), end="")
     if not os.path.isfile(os.path.join(config.output_folder, "__init__.py")):
         open(os.path.join(config.output_folder, "__init__.py"), "w").write(
             "# Dummy file to enable .pyi imports\n"
@@ -40,7 +50,7 @@ def print_file(input_file: str, config: PrintConfig) -> None:
 
 
 def process_folder(input_folder: str, config: PrintConfig) -> None:
-    for (dirpath, _, filenames) in os.walk(input_folder):
+    for dirpath, _, filenames in os.walk(input_folder):
         for filename in filenames:
             if filename.endswith(".json"):
                 print_file(os.path.join(dirpath, filename), config)
