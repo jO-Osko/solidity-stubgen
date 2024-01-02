@@ -6,6 +6,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, Generic, List, Optional, Type, TypeVar
 
+from attr import evolve, frozen
 from hexbytes import HexBytes
 
 from solidity_typestub.deserializers import (
@@ -35,14 +36,14 @@ decoder_data_header = [
 ]
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class ParsingState:
     types: dict[str, "Struct"] = dataclasses.field(default_factory=dict)
 
     def add_type(self, typ: "Struct") -> "ParsingState":
         new_dict = self.types.copy()
         new_dict[typ.original_name] = typ
-        return dataclasses.replace(self, types=new_dict)
+        return evolve(self, types=new_dict)
 
     @classmethod
     def empty(cls) -> "ParsingState":
@@ -52,13 +53,13 @@ class ParsingState:
 T = TypeVar("T", bound="Parsable", covariant=True)
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class ParsingResult(Generic[T]):
     state: ParsingState
     parsed: T
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Parsable:
     @classmethod
     def parse(
@@ -67,7 +68,7 @@ class Parsable:
         raise NotImplementedError()
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class SolidityType(Parsable):
     name: str
 
@@ -128,7 +129,7 @@ class SolidityType(Parsable):
             assert False
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class ValueType(SolidityType):
     @property
     @abstractmethod
@@ -136,7 +137,7 @@ class ValueType(SolidityType):
         raise NotImplementedError()
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Bool(SolidityType):
     def python_type(self) -> type:
         return bool
@@ -145,11 +146,11 @@ class Bool(SolidityType):
         return BoolTypeDecoder()
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Integer(SolidityType):
     size: int = dataclasses.field(init=False)
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         size = self.name.replace("uint", "").replace("int", "")
         size_i = int(size) if size else 256
         object.__setattr__(self, "size", size_i)
@@ -161,13 +162,14 @@ class Integer(SolidityType):
         return IntTypeDecoder()
 
 
+@frozen
 class AddressType:
     address: str
 
     __name__ = "AddressType"
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Address(SolidityType):
     def python_type(self) -> type:
         return AddressType
@@ -176,11 +178,11 @@ class Address(SolidityType):
         return AddressTypeDecoder()
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Bytes(SolidityType):
     size: int = dataclasses.field(init=False)
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         size = int(self.name.replace("bytes", ""))
         assert size <= 32, "Bytes must be <= 32"
         object.__setattr__(self, "size", size)
@@ -192,6 +194,7 @@ class Bytes(SolidityType):
         return BytesTypeDecoder()
 
 
+@frozen
 class BytesType(SolidityType):
     def python_type(self) -> type:
         return HexBytes
@@ -199,7 +202,8 @@ class BytesType(SolidityType):
     def get_decoder(self) -> SolidityTypeDecoder:
         return BytesTypeDecoder()
 
-@dataclasses.dataclass(frozen=True)
+
+@frozen
 class String(SolidityType):
     def python_type(self) -> type:
         return str
@@ -208,7 +212,7 @@ class String(SolidityType):
         return BytesTypeDecoder()
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Array(SolidityType):
     internal_type: SolidityType
     size: Optional[int] = None
@@ -224,13 +228,13 @@ class Array(SolidityType):
         return ArrayTypeDecoder(self.internal_type.get_decoder())
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Struct(SolidityType):
     original_name: str
     members: Dict[str, SolidityType] = dataclasses.field(default_factory=dict)
     name: str = dataclasses.field(init=False)
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         object.__setattr__(
             self, "name", self.original_name.replace(".", "__").rstrip("[]")
         )
@@ -245,7 +249,7 @@ class Struct(SolidityType):
         return StructTypeDecoder({m: t.get_decoder() for m, t in self.members.items()})
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class AbiType(Parsable):
     name: str
     internal_type: Optional[str]
@@ -269,7 +273,7 @@ class AbiType(Parsable):
         return self.name or "_"
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class SolidityMethod(Parsable):
     @classmethod
     def parse(
@@ -287,7 +291,7 @@ class SolidityMethod(Parsable):
         raise NotImplementedError()
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Function(SolidityMethod):
     name: str
     inputs: List[AbiType] = dataclasses.field(default_factory=list)
@@ -342,7 +346,7 @@ class Function(SolidityMethod):
         return f"Function{self.name}"
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Constructor(Function):
     @classmethod
     def parse(
@@ -363,14 +367,14 @@ class Constructor(Function):
         )
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Contract:
     name: str
     raw_abi: List[Dict[str, Any]]
     function_data: List[Function] = dataclasses.field(init=False)
     state: ParsingState = dataclasses.field(init=False)
 
-    def __post_init__(self) -> None:
+    def __attrs_post_init__(self) -> None:
         state = ParsingState.empty()
         data: List[SolidityMethod] = []
         for abi in self.raw_abi:

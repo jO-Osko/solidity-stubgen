@@ -1,6 +1,6 @@
-import dataclasses
 from typing import Mapping, Sequence
 
+from attr import frozen
 from hexbytes import HexBytes
 from typing_extensions import TypeAlias
 
@@ -9,13 +9,13 @@ JSON_ro: TypeAlias = (
 )
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class SolidityTypeDecoder:
     def process(self, value: JSON_ro) -> "JSON_ro":
         raise NotImplementedError()
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class ValueType(SolidityTypeDecoder):
     def python_type(self) -> type:
         raise NotImplementedError()
@@ -24,13 +24,13 @@ class ValueType(SolidityTypeDecoder):
         return self.python_type()(value)
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class AddressTypeDecoder(ValueType):
     def python_type(self) -> type:
         return str
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class BytesTypeDecoder(ValueType):
     def python_type(self) -> type:
         return bytes
@@ -43,7 +43,7 @@ class BytesTypeDecoder(ValueType):
             raise NotImplementedError()
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class IntTypeDecoder(ValueType):
     def python_type(self) -> type:
         return int
@@ -62,7 +62,7 @@ class BoolTypeDecoder(ValueType):
             raise ValueError(f"Invalid boolean value: {value}")
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class ArrayTypeDecoder(SolidityTypeDecoder):
     inner: SolidityTypeDecoder
 
@@ -70,7 +70,7 @@ class ArrayTypeDecoder(SolidityTypeDecoder):
         return [self.inner.process(v) for v in value]
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class StructTypeDecoder(SolidityTypeDecoder):
     fields: dict[str, SolidityTypeDecoder]
 
